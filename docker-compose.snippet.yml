@@ -1,0 +1,16 @@
+# Add this service to your existing docker-compose.yml (same network as n8n).
+#
+#   agent-api:
+#     build: ./agent-beaconlab
+#     container_name: agent-api
+#     restart: unless-stopped
+#     env_file:
+#       - ./agent-beaconlab/.env
+#     ports:
+#       - "8000:8000"
+#     networks:
+#       - your_shared_network
+#
+# n8n HTTP Request node example:
+#   POST http://agent-api:8000/briefing
+#   Body: {"date": "2026-06-09", "language": "en", "max_words": 1200}
