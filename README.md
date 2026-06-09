@@ -176,15 +176,42 @@ uvicorn beacon_lab.api.app:app --reload --host 127.0.0.1 --port 8010
 
 Necesitas OpenClaw corriendo por separado (`docker compose up -d openclawd` o el setup completo).
 
-## Despliegue en VPS (con n8n)
+## Integración con n8n ([n8n-deploy](https://github.com/Piuliss/n8n-deploy))
+
+Ambos stacks comparten la red Docker **`beaconlab`**.
+
+```bash
+# 1. Levanta agent-beaconlab (crea la red beaconlab)
+cd agent-beaconlab
+docker compose up -d --build
+
+# 2. Levanta n8n-deploy (n8n se une a beaconlab como red externa)
+cd ../n8n-deploy
+docker compose up -d
+```
+
+**En n8n** — nodo HTTP Request:
+
+| Campo | Valor |
+|-------|-------|
+| Method | `POST` |
+| URL | `http://agent-api:8000/briefing` |
+| Body (JSON) | `{"date":"2026-06-09","language":"es","max_words":1200}` |
+
+> Usa el nombre del contenedor `agent-api` y puerto **8000** (interno). No uses `8010` — ese es solo para acceso desde el host.
+
+Si la red no existe aún (solo n8n, sin agent-beaconlab):
+
+```bash
+docker network create beaconlab
+```
+
+## Despliegue en VPS
 
 1. Copia el repo en el servidor (ej. `/opt/agent-beaconlab`)
 2. `cp .env.example .env && ./scripts/setup-openclawd.sh`
-3. En `docker-compose.yml`:
-   - Comenta los bloques `ports` de `agent-api` y `openclawd`
-   - Cambia la red a `traefik_proxy` (ver comentarios al final del archivo)
-4. `docker compose up -d --build`
-5. En n8n: nodo HTTP Request → `POST http://agent-api:8000/briefing`
+3. Levanta n8n-deploy y luego `docker compose up -d --build`
+4. En producción puedes comentar los `ports` de `agent-api` y `openclawd` si solo n8n accede por red interna
 
 ## Comandos útiles
 

@@ -13,12 +13,10 @@
 #
 # OpenClaw Control UI: http://localhost:18789
 #
-# En el VPS (junto a n8n en /opt/n8n):
-#   1. Clona/copia este repo en /opt/agent-beaconlab
-#   2. cp .env.example .env && ./scripts/setup-openclawd.sh
-#   3. Comenta "ports" en agent-api y openclawd; usa red traefik_proxy
-#   4. docker compose up -d --build
-#   5. En n8n: POST http://agent-api:8000/briefing
+# Integración n8n (n8n-deploy):
+#   1. Levanta agent-beaconlab primero (crea la red beaconlab)
+#   2. Levanta n8n-deploy (n8n se une a beaconlab como red externa)
+#   3. En n8n: POST http://agent-api:8000/briefing
 
 services:
   openclawd:
@@ -98,20 +96,5 @@ services:
 
 networks:
   beaconlab:
+    name: beaconlab
     driver: bridge
-
-# --- VPS: reemplaza networks y comenta ports ---
-#
-# services:
-#   openclawd:
-#     ports: []
-#     networks:
-#       - traefik_proxy
-#   agent-api:
-#     ports: []
-#     networks:
-#       - traefik_proxy
-#
-# networks:
-#   traefik_proxy:
-#     external: true
