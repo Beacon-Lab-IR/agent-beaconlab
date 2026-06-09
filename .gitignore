@@ -1,4 +1,7 @@
 .env
+openclaw/config/
+openclaw/workspace/
+openclaw/auth-secrets/
 __pycache__/
 *.py[cod]
 .venv/
@@ -6,3 +9,4 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+tmp/

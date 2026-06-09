@@ -6,13 +6,6 @@ import os
 from dataclasses import dataclass
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
-
-
 @dataclass(frozen=True)
 class Settings:
     openclawd_base_url: str
@@ -20,7 +13,6 @@ class Settings:
     openclawd_model: str
     openclawd_agent_id: str | None
     openclawd_timeout_seconds: float
-    enable_web_search_tool: bool
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -37,7 +29,6 @@ class Settings:
             openclawd_model=os.getenv("OPENCLAWD_MODEL", "openclaw:beacon-lab"),
             openclawd_agent_id=os.getenv("OPENCLAWD_AGENT_ID"),
             openclawd_timeout_seconds=float(os.getenv("OPENCLAWD_TIMEOUT_SECONDS", "180")),
-            enable_web_search_tool=_env_bool("ENABLE_WEB_SEARCH_TOOL", default=True),
         )
 
 

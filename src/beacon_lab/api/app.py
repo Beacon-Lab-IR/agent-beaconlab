@@ -9,13 +9,14 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from agent_client import (
+from beacon_lab import __version__
+from beacon_lab.models.briefing import BriefingRequest, BriefingResponse
+from beacon_lab.services.openclawd import (
     AgentClientError,
     AgentTimeoutError,
     AgentUpstreamError,
     call_beacon_lab_agent,
 )
-from schemas import BriefingRequest, BriefingResponse
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Beacon Lab Agent API",
     description="HTTP wrapper for the Beacon Lab Daily Threat Briefing agent (OpenClawD + LLM).",
-    version="0.1.0",
+    version=__version__,
 )
 
 

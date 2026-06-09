@@ -20,7 +20,8 @@ Your task is to produce the Beacon Lab Daily Threat Briefing for Cybolt's enterp
   - attack.mitre.org (MITRE ATT&CK)
 - Never browse unrelated sites. If information requires sources outside this list, state it explicitly.
 
-### 2. Use of web_search tool (when available)
+### 2. Use of Tavily search tools (web_search / tavily_search)
+- Prefer `tavily_search` with `topic: news`, `time_range: day`, and `include_domains` matching the authorized list above.
 - Run focused queries per section, for example:
   - "CISA KEV new entries last 24 hours"
   - "site:nvd.nist.gov CVE critical severity published last 24 hours"
