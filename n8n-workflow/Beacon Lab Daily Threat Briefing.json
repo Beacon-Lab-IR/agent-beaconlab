@@ -1,0 +1,140 @@
+{
+  "name": "Beacon Lab Daily Threat Briefing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "47fa711c-7806-4478-a342-c046e3146fcc",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003851585867",
+        "text": "={{ $json.briefing }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ed0c7ed9-e50e-4178-8128-e0441be5cc85",
+      "name": "Send a text message",
+      "webhookId": "85de9299-5bfa-46c8-9292-2974b553d0b5",
+      "credentials": {
+        "telegramApi": {
+          "id": "ShEi0IhojHXCbkzI",
+          "name": "Bot Beacon Lab"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://agent-api:8000/briefing",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ DateTime.now().toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "language",
+              "value": "es"
+            },
+            {
+              "name": "max_words",
+              "value": "1200"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "1b85c51c-f9b0-4fe7-9208-556b7b146bb7",
+      "name": "Agent BeaconLab"
+    },
+    {
+      "parameters": {
+        "jsCode": "const briefing = $input.first().json.briefing;\nconst MAX = 4000;\nconst chunks = [];\n\nfor (let i = 0; i < briefing.length; i += MAX) {\n  chunks.push({\n    json: { briefing: briefing.substring(i, i + MAX) }\n  });\n}\n\nreturn chunks;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "0b1ea6dc-f5f6-4a3d-84fc-b0151038632a",
+      "name": "Split Briefing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agent BeaconLab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent BeaconLab": {
+      "main": [
+        [
+          {
+            "node": "Split Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Briefing": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "15b23842-1fd6-4884-8d4e-cb56003aebb5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8c3b904467e094ab2ee231a5d6d80dadb737e8317172683672a20ca0880c9dcb"
+  },
+  "id": "BJgzERqODHFTMgaR",
+  "tags": []
+}
