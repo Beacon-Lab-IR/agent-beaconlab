@@ -17,13 +17,10 @@ from typing import Any
 import httpx
 
 from schemas import BriefingRequest
+from prompts import BEACON_LAB_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
-BEACON_LAB_SYSTEM_PROMPT = """You are the Beacon Lab Intelligence Analyst.
-Produce a concise, actionable Daily Threat Briefing for security teams.
-Write in the requested language and stay within the word limit.
-"""
 
 OPENCLAWD_TIMEOUT_SECONDS = float(os.getenv("OPENCLAWD_TIMEOUT_SECONDS", "180"))
 
