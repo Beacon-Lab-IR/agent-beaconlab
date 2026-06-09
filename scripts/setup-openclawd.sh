@@ -57,21 +57,37 @@ is_placeholder() {
 }
 
 get_beacon_lab_agent_index() {
-  python3 - "$CONFIG_DIR/openclaw.json" <<'PY'
-import json
-import sys
+  # Read config inside the container — openclaw.json is owned by uid 1000 after onboarding.
+  docker compose run --rm --no-deps \
+    -e HOME=/home/node \
+    -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json \
+    --entrypoint node openclawd -e "
+const fs = require('fs');
+const cfg = JSON.parse(fs.readFileSync('/home/node/.openclaw/openclaw.json', 'utf8'));
+const list = cfg.agents?.list ?? [];
+for (let i = 0; i < list.length; i++) {
+  if (list[i].id === 'beacon-lab') {
+    console.log(i);
+    process.exit(0);
+  }
+}
+process.exit(1);
+"
+}
 
-path = sys.argv[1]
-with open(path, encoding="utf-8") as fh:
-    cfg = json.load(fh)
+chown_openclaw_to_host() {
+  local uid gid
+  uid="$(id -u)"
+  gid="$(id -g)"
+  docker compose run --rm --no-deps --user root --entrypoint sh openclawd -c \
+    "mkdir -p /home/node/.openclaw/tmp /home/node/.config/openclaw; \
+     chown -R ${uid}:${gid} /home/node/.openclaw /home/node/.config/openclaw 2>/dev/null || true"
+}
 
-for index, agent in enumerate(cfg.get("agents", {}).get("list", [])):
-    if agent.get("id") == "beacon-lab":
-        print(index)
-        sys.exit(0)
-
-sys.exit(1)
-PY
+chown_openclaw_to_container() {
+  docker compose run --rm --no-deps --user root --entrypoint sh openclawd -c \
+    'mkdir -p /home/node/.openclaw/tmp /home/node/.config/openclaw; \
+     chown -R node:node /home/node/.openclaw /home/node/.config/openclaw 2>/dev/null || true'
 }
 
 run_openclawd() {
@@ -241,7 +257,9 @@ fi
 
 configure_minimax
 configure_tavily_and_beacon_lab_agent
+chown_openclaw_to_host
 sync_agent_skills
+chown_openclaw_to_container
 
 echo ""
 echo "OpenClawD listo (MiniMax + Tavily)."
