@@ -60,12 +60,30 @@ OpenClaw los descubre automáticamente desde el workspace del agente `beacon-lab
 
 ## Inicio rápido (Docker)
 
+> **Orden obligatorio:** primero `./scripts/setup-openclawd.sh`, luego `docker compose up`.
+> Si levantas el stack antes del setup, Docker crea `openclaw/` como **root** al montar volúmenes y OpenClaw falla con `Missing config`.
+
 ```bash
 cp .env.example .env
 # Edita .env: MINIMAX_API_KEY y TAVILY_API_KEY
 ./scripts/setup-openclawd.sh
 docker compose up -d --build
 ```
+
+### Permisos de volúmenes (`openclaw/`)
+
+Los bind-mounts de OpenClaw deben ser escribibles por el usuario **node (uid 1000)** del contenedor. El servicio **`openclaw-init`** (y el setup script) crean directorios y aplican `chown 1000:1000` antes de arrancar el gateway.
+
+Si ya levantaste el stack sin setup y ves `Permission denied` o `Missing config`:
+
+```bash
+docker compose down
+sudo chown -R deploy:deploy openclaw/   # o tu usuario de despliegue
+./scripts/setup-openclawd.sh
+docker compose up -d --build
+```
+
+No uses `sudo docker compose` en el directorio del proyecto.
 
 Probar:
 

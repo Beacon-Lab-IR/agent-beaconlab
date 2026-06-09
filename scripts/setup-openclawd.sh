@@ -75,19 +75,9 @@ process.exit(1);
 "
 }
 
-chown_openclaw_to_host() {
-  local uid gid
-  uid="$(id -u)"
-  gid="$(id -g)"
-  docker compose run --rm --no-deps --user root --entrypoint sh openclawd -c \
-    "mkdir -p /home/node/.openclaw/tmp /home/node/.config/openclaw; \
-     chown -R ${uid}:${gid} /home/node/.openclaw /home/node/.config/openclaw 2>/dev/null || true"
-}
-
-chown_openclaw_to_container() {
-  docker compose run --rm --no-deps --user root --entrypoint sh openclawd -c \
-    'mkdir -p /home/node/.openclaw/tmp /home/node/.config/openclaw; \
-     chown -R node:node /home/node/.openclaw /home/node/.config/openclaw 2>/dev/null || true'
+ensure_openclaw_volume_layout() {
+  echo "==> Preparando volúmenes openclaw/ (uid 1000, evita dirs root al montar)"
+  docker compose run --rm --no-deps openclaw-init
 }
 
 run_openclawd() {
@@ -172,31 +162,28 @@ PY
 
 sync_agent_skills() {
   local skill_src="$ROOT_DIR/skills/cybolt-presales"
-  local skill_dest="$WORKSPACE_DIR/beacon-lab/skills/cybolt-presales"
 
   if [[ ! -f "$skill_src/SKILL.md" ]]; then
     warn "No se encontró $skill_src/SKILL.md — omitiendo sync de skills"
     return
   fi
 
-  echo "==> Sincronizando skills al workspace beacon-lab"
-  rm -rf "$skill_dest"
-  mkdir -p "$skill_dest"
-  cp -R "$skill_src/." "$skill_dest/"
+  echo "==> Sincronizando skills al workspace beacon-lab (vía contenedor)"
+  docker compose run --rm --no-deps --user root \
+    -v "${skill_src}:/skill-src:ro" \
+    --entrypoint sh openclawd -c \
+    'rm -rf /home/node/.openclaw/workspace/beacon-lab/skills/cybolt-presales
+mkdir -p /home/node/.openclaw/workspace/beacon-lab/skills/cybolt-presales
+cp -R /skill-src/. /home/node/.openclaw/workspace/beacon-lab/skills/cybolt-presales/
+chown -R node:node /home/node/.openclaw/workspace/beacon-lab/skills'
   echo "Skill cybolt-presales → openclaw/workspace/beacon-lab/skills/cybolt-presales/"
 }
 
 require_cmd docker
 docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 no disponible"
 
-mkdir -p "$CONFIG_DIR/identity" \
-  "$CONFIG_DIR/agents/main/agent" \
-  "$CONFIG_DIR/agents/main/sessions" \
-  "$CONFIG_DIR/agents/beacon-lab/agent" \
-  "$CONFIG_DIR/agents/beacon-lab/sessions" \
-  "$CONFIG_DIR/tmp" \
-  "$WORKSPACE_DIR/beacon-lab" \
-  "$AUTH_DIR"
+# Solo crear el árbol base; permisos finos los fija openclaw-init (como root → uid 1000).
+mkdir -p "$ROOT_DIR/openclaw"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   cp "$ROOT_DIR/.env.example" "$ENV_FILE"
@@ -220,14 +207,9 @@ export OPENCLAW_IMAGE="${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}"
 export MINIMAX_MODEL="${MINIMAX_MODEL:-minimax/MiniMax-M3}"
 
 echo "==> Descargando imagen OpenClaw: $OPENCLAW_IMAGE"
-docker compose pull openclawd
+docker compose pull openclawd openclaw-init
 
-echo "==> Ajustando permisos (uid 1000)"
-docker compose run --rm --no-deps --user root --entrypoint sh openclawd -c \
-  'mkdir -p /home/node/.openclaw/tmp /home/node/.config/openclaw; \
-   find /home/node/.openclaw -xdev -exec chown node:node {} + 2>/dev/null || true; \
-   chown node:node /home/node/.config 2>/dev/null || true; \
-   find /home/node/.config/openclaw -xdev -exec chown node:node {} + 2>/dev/null || true'
+ensure_openclaw_volume_layout
 
 if [[ ! -f "$CONFIG_DIR/openclaw.json" ]]; then
   echo "==> Onboarding OpenClaw (base, sin proveedor)"
@@ -257,9 +239,8 @@ fi
 
 configure_minimax
 configure_tavily_and_beacon_lab_agent
-chown_openclaw_to_host
 sync_agent_skills
-chown_openclaw_to_container
+ensure_openclaw_volume_layout
 
 echo ""
 echo "OpenClawD listo (MiniMax + Tavily)."

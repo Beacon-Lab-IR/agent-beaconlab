@@ -19,10 +19,27 @@
 #   3. En n8n: POST http://agent-api:8000/briefing
 
 services:
+  # Corrige permisos de bind-mounts antes de openclawd (Docker crea dirs como root si no existen).
+  openclaw-init:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    user: root
+    volumes:
+      - ./openclaw/config:/home/node/.openclaw
+      - ./openclaw/workspace:/home/node/.openclaw/workspace
+      - ./openclaw/auth-secrets:/home/node/.config/openclaw
+      - ./scripts/openclaw-init.sh:/openclaw-init.sh:ro
+    entrypoint: ["/bin/sh", "/openclaw-init.sh"]
+    restart: "no"
+    networks:
+      - beaconlab
+
   openclawd:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     container_name: openclawd
     restart: unless-stopped
+    depends_on:
+      openclaw-init:
+        condition: service_completed_successfully
     env_file:
       - .env
     environment:
